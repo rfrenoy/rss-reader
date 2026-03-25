@@ -105,7 +105,11 @@ program
       process.exit(1);
     }
 
-    console.log(`Using ${config.llmProvider} provider\n`);
+    if (config.llmProvider === "ollama") {
+      console.log(`Using ollama provider (model=${config.ollamaModel}, url=${config.ollamaBaseUrl})\n`);
+    } else {
+      console.log(`Using anthropic provider (model=${config.anthropicModel})\n`);
+    }
 
     const db = initDatabase(config.dbPath);
     const feeds = listFeeds(db);
@@ -148,6 +152,7 @@ program
         if (articleExists(db, feed.id, article.guid)) continue;
 
         console.log(`  new: ${article.title}`);
+        console.log(`    content: ${article.content.length} chars`);
 
         let summary = "No summary available.";
         let tags: string[] = [];
@@ -155,8 +160,10 @@ program
           const result = await summarizeArticle(llm, article);
           summary = result.summary;
           tags = result.tags;
-        } catch (err) {
-          console.error(`  ⚠ Summary failed: ${err}`);
+          console.log(`    tags: [${tags.join(", ")}]`);
+        } catch (err: any) {
+          const cause = err.cause ? `\n    cause: ${err.cause.message ?? err.cause}` : "";
+          console.error(`  ⚠ Summary failed: ${err.message}${cause}`);
         }
 
         const articleId = insertArticle(db, {
