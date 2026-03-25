@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "rss": "tsx src/index.ts",
-    "digest": "tsx src/index.ts digest"
+    "digest": "tsx src/index.ts digest",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -18,6 +20,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.1"
   }
 }

@@ -50,6 +50,22 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
   return { feedTitle: rss.title || null, articles };
 }
 
+/**
+ * Extract readable text content from an HTML string.
+ * Exported for testability.
+ */
+export function extractContentFromHtml(html: string): string {
+  if (!html.trim()) return "";
+  try {
+    const { document } = parseHTML(html);
+    const reader = new Readability(document as any);
+    const article = reader.parse();
+    return article?.textContent?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
 async function extractArticleContent(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
@@ -63,9 +79,5 @@ async function extractArticleContent(url: string): Promise<string> {
   }
 
   const html = await response.text();
-  const { document } = parseHTML(html);
-  const reader = new Readability(document as any);
-  const article = reader.parse();
-
-  return article?.textContent?.trim() || "";
+  return extractContentFromHtml(html);
 }
