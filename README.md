@@ -12,7 +12,7 @@ npm install
 
 ```bash
 # Install Ollama: https://ollama.com
-ollama pull qwen2.5:32b
+ollama pull qwen2.5:7b
 ```
 
 No API key needed. The reader defaults to Ollama when no `ANTHROPIC_API_KEY` is set.
@@ -56,7 +56,7 @@ All via environment variables (or `.env`):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LLM_PROVIDER` | *auto* | `ollama` or `anthropic`. Auto-detected if not set. |
-| `OLLAMA_MODEL` | `qwen2.5:32b` | Ollama model name |
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Ollama model name |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key (triggers auto-detect) |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Anthropic model |

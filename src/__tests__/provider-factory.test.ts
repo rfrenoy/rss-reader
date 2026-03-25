@@ -12,7 +12,7 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     llmProvider: "ollama",
     anthropicApiKey: "",
     anthropicModel: "claude-sonnet-4-20250514",
-    ollamaModel: "qwen2.5:32b",
+    ollamaModel: "qwen2.5:7b",
     ollamaBaseUrl: "http://localhost:11434",
     ...overrides,
   };

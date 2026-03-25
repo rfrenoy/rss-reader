@@ -42,7 +42,7 @@ export function loadConfig(): Config {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
     anthropicModel: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
 
-    ollamaModel: process.env.OLLAMA_MODEL || "qwen2.5:32b",
+    ollamaModel: process.env.OLLAMA_MODEL || "qwen2.5:7b",
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
   };
 }

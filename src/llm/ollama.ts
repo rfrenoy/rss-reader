@@ -5,8 +5,8 @@ export { parseSummaryResponse } from "./shared";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";
 
-// 5 minutes total timeout
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+// 10 minutes total timeout — local models on CPU can be slow
+const REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 
 export class OllamaProvider implements LLMProvider {
   private baseUrl: string;
