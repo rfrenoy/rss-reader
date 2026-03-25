@@ -299,6 +299,24 @@ describe("getArticlesSince", () => {
     expect(articles[0].guid).toBe("new");
   });
 
+  it("works with space-separated datetime format from SQLite", () => {
+    // SQLite's datetime('now') produces "YYYY-MM-DD HH:MM:SS" (space, not T)
+    const feed = addFeed(db, "https://example.com/feed.xml");
+    db.prepare(
+      `INSERT INTO articles (feed_id, guid, url, title, summary, published_at, fetched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(feed.id, "g1", "https://example.com/1", "Article", "s", null, "2026-03-25 14:30:00");
+
+    // Space-format cutoff should match space-format fetched_at
+    const found = getArticlesSince(db, "2026-03-25 00:00:00");
+    expect(found).toHaveLength(1);
+
+    // T-format cutoff must NOT silently miss space-format rows
+    const missed = getArticlesSince(db, "2026-03-25T00:00:00");
+    // "2026-03-25 14:30:00" < "2026-03-25T00:00:00" because space < T in ASCII
+    expect(missed).toHaveLength(0); // This is the bug we fixed in index.ts
+  });
+
   it("returns empty tags array when article has no tags", () => {
     const feed = addFeed(db, "https://example.com/feed.xml");
     insertArticle(db, {

@@ -198,8 +198,9 @@ program
     }
 
     // Generate digest from everything fetched today
+    // Use space separator to match SQLite's datetime() format
     const today = new Date().toISOString().split("T")[0];
-    const todayStart = `${today}T00:00:00`;
+    const todayStart = `${today} 00:00:00`;
     const digestArticles = getArticlesSince(db, todayStart);
 
     const markdown = generateDigest(today, digestArticles);
