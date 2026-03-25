@@ -12,7 +12,7 @@ import {
   getArticlesSince,
   recordDigest,
 } from "./db";
-import { AnthropicProvider } from "./llm/anthropic";
+import { createProvider } from "./llm";
 import { fetchFeed } from "./fetcher";
 import { summarizeArticle } from "./summarizer";
 import { generateDigest, writeDigest } from "./digest";
@@ -97,18 +97,17 @@ program
   .action(async () => {
     const config = loadConfig();
 
-    if (!config.anthropicApiKey) {
-      console.error(
-        "Error: ANTHROPIC_API_KEY environment variable is required."
-      );
+    let llm;
+    try {
+      llm = createProvider(config);
+    } catch (err: any) {
+      console.error(`Error: ${err.message}`);
       process.exit(1);
     }
 
+    console.log(`Using ${config.llmProvider} provider\n`);
+
     const db = initDatabase(config.dbPath);
-    const llm = new AnthropicProvider(
-      config.anthropicApiKey,
-      config.anthropicModel
-    );
     const feeds = listFeeds(db);
 
     if (feeds.length === 0) {

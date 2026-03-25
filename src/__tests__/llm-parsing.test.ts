@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseSummaryResponse } from "../llm/anthropic";
+import { parseSummaryResponse } from "../llm/shared";
 
 describe("parseSummaryResponse", () => {
   it("parses well-formed JSON response", () => {

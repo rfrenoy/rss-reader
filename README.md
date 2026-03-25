@@ -6,8 +6,21 @@ AI-assisted RSS reader that generates daily markdown digests with article summar
 
 ```bash
 npm install
-cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+```
+
+### Option A: Ollama (default — free, local)
+
+```bash
+# Install Ollama: https://ollama.com
+ollama pull qwen2.5:32b
+```
+
+No API key needed. The reader defaults to Ollama when no `ANTHROPIC_API_KEY` is set.
+
+### Option B: Anthropic API
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ## Usage
@@ -27,7 +40,7 @@ npm run digest
 ```
 
 This fetches all feeds, identifies new articles (GUID-based dedup), extracts full
-article content, generates a summary and tags via Claude, and writes a dated
+article content, generates a summary and tags via LLM, and writes a dated
 markdown file to `~/.rss-reader/digests/YYYY-MM-DD.md`.
 
 ### CRON (daily at 7am)
@@ -42,8 +55,11 @@ All via environment variables (or `.env`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Model for summaries |
+| `LLM_PROVIDER` | *auto* | `ollama` or `anthropic`. Auto-detected if not set. |
+| `OLLAMA_MODEL` | `qwen2.5:32b` | Ollama model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key (triggers auto-detect) |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Anthropic model |
 | `RSS_DATA_DIR` | `~/.rss-reader` | Database and data directory |
 | `RSS_DIGESTS_DIR` | `~/.rss-reader/digests` | Digest output directory |
 
@@ -59,7 +75,10 @@ src/
 ├── digest.ts         Markdown digest generation
 └── llm/
     ├── types.ts      LLMProvider interface (abstraction layer)
-    └── anthropic.ts  Anthropic/Claude implementation
+    ├── shared.ts     Prompt template + response parsing
+    ├── index.ts      Provider factory
+    ├── anthropic.ts  Anthropic/Claude implementation
+    └── ollama.ts     Ollama implementation (local models)
 ```
 
 ## Data
