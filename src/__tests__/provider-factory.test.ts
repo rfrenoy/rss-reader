@@ -14,6 +14,8 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     anthropicModel: "claude-sonnet-4-20250514",
     ollamaModel: "qwen2.5:7b",
     ollamaBaseUrl: "http://localhost:11434",
+    maxArticleAgeDays: 7,
+    maxArticlesPerFeed: 20,
     ...overrides,
   };
 }

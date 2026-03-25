@@ -17,6 +17,10 @@ export interface Config {
   // Ollama
   ollamaModel: string;
   ollamaBaseUrl: string;
+
+  // Fetch limits
+  maxArticleAgeDays: number;
+  maxArticlesPerFeed: number;
 }
 
 function resolveProvider(): LLMProviderType {
@@ -44,5 +48,8 @@ export function loadConfig(): Config {
 
     ollamaModel: process.env.OLLAMA_MODEL || "qwen2.5:7b",
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+
+    maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "7", 10),
+    maxArticlesPerFeed: parseInt(process.env.MAX_ARTICLES_PER_FEED || "20", 10),
   };
 }

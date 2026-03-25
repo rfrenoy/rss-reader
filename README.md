@@ -60,6 +60,8 @@ All via environment variables (or `.env`):
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key (triggers auto-detect) |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Anthropic model |
+| `MAX_ARTICLE_AGE_DAYS` | `7` | Skip articles older than N days |
+| `MAX_ARTICLES_PER_FEED` | `20` | Max articles to process per feed |
 | `RSS_DATA_DIR` | `~/.rss-reader` | Database and data directory |
 | `RSS_DIGESTS_DIR` | `~/.rss-reader/digests` | Digest output directory |
 

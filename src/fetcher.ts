@@ -14,15 +14,35 @@ export interface FetchedArticle {
 export interface FeedFetchResult {
   feedTitle: string | null;
   articles: FetchedArticle[];
+  skippedOld: number;
+  skippedCap: number;
+}
+
+export interface FetchOptions {
+  /** Only include articles newer than this many days. 0 = no limit. */
+  maxAgeDays?: number;
+  /** Max articles to process per feed. 0 = no limit. */
+  maxPerFeed?: number;
 }
 
 const parser = new Parser();
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
+export async function fetchFeed(
+  feed: Feed,
+  options: FetchOptions = {}
+): Promise<FeedFetchResult> {
+  const { maxAgeDays = 0, maxPerFeed = 0 } = options;
   const rss = await parser.parseURL(feed.url);
   const articles: FetchedArticle[] = [];
+
+  const cutoff = maxAgeDays > 0
+    ? new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000)
+    : null;
+
+  let skippedOld = 0;
+  let skippedCap = 0;
 
   for (const item of rss.items) {
     const guid = item.guid || item.link || item.title || "";
@@ -32,11 +52,25 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
 
     if (!url) continue;
 
+    // Skip articles older than cutoff
+    if (cutoff && published_at) {
+      const pubDate = new Date(published_at);
+      if (pubDate < cutoff) {
+        skippedOld++;
+        continue;
+      }
+    }
+
+    // Enforce per-feed cap
+    if (maxPerFeed > 0 && articles.length >= maxPerFeed) {
+      skippedCap++;
+      continue;
+    }
+
     let content = "";
     try {
       content = await extractArticleContent(url);
     } catch (err) {
-      // Fallback to whatever the RSS feed provides
       console.warn(`    ⚠ Could not extract full article from ${url}: ${err}`);
     }
 
@@ -47,7 +81,7 @@ export async function fetchFeed(feed: Feed): Promise<FeedFetchResult> {
     articles.push({ guid, url, title, content, published_at });
   }
 
-  return { feedTitle: rss.title || null, articles };
+  return { feedTitle: rss.title || null, articles, skippedOld, skippedCap };
 }
 
 /**

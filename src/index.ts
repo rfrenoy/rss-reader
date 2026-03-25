@@ -133,9 +133,18 @@ program
       let articles: Awaited<ReturnType<typeof fetchFeed>>["articles"] = [];
 
       try {
-        const result = await fetchFeed(feed);
+        const result = await fetchFeed(feed, {
+          maxAgeDays: config.maxArticleAgeDays,
+          maxPerFeed: config.maxArticlesPerFeed,
+        });
         feedTitle = result.feedTitle;
         articles = result.articles;
+        if (result.skippedOld > 0) {
+          console.log(`  skipped ${result.skippedOld} article${result.skippedOld !== 1 ? "s" : ""} older than ${config.maxArticleAgeDays} days`);
+        }
+        if (result.skippedCap > 0) {
+          console.log(`  capped: ${result.skippedCap} extra article${result.skippedCap !== 1 ? "s" : ""} beyond limit of ${config.maxArticlesPerFeed}`);
+        }
       } catch (err) {
         console.error(`  ✗ Failed to fetch: ${err}`);
         continue;
