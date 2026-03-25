@@ -1,0 +1,23 @@
+{
+  "name": "rss-reader",
+  "version": "0.1.0",
+  "description": "AI-assisted RSS reader with daily digests",
+  "type": "module",
+  "scripts": {
+    "rss": "tsx src/index.ts",
+    "digest": "tsx src/index.ts digest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@mozilla/readability": "^0.5.0",
+    "better-sqlite3": "^11.0.0",
+    "commander": "^13.0.0",
+    "linkedom": "^0.18.0",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}
