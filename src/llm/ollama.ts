@@ -1,4 +1,3 @@
-import { Agent } from "http";
 import type { LLMProvider, ArticleSummary } from "./types";
 import { buildSummarizeMessage, parseSummaryResponse } from "./shared";
 
@@ -6,23 +5,8 @@ export { parseSummaryResponse } from "./shared";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";
 
-// 5 minutes — a 32B model on a long article with stream:false can take a while
+// 5 minutes total timeout
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
-
-// Custom agent with generous timeouts to avoid Node's default headers timeout
-const agent = new Agent({
-  keepAlive: true,
-  timeout: REQUEST_TIMEOUT_MS,
-});
-
-interface OllamaChatResponse {
-  message: {
-    role: string;
-    content: string;
-  };
-  total_duration?: number;
-  eval_count?: number;
-}
 
 export class OllamaProvider implements LLMProvider {
   private baseUrl: string;
@@ -46,13 +30,13 @@ export class OllamaProvider implements LLMProvider {
       response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // @ts-expect-error — Node's fetch supports dispatcher for custom agent
-        dispatcher: agent,
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         body: JSON.stringify({
           model: this.model,
           messages: [{ role: "user", content: message }],
-          stream: false,
+          // Use streaming to avoid Node's default headers timeout.
+          // Ollama sends chunks immediately so headers arrive fast.
+          stream: true,
           format: "json",
         }),
       });
@@ -66,11 +50,73 @@ export class OllamaProvider implements LLMProvider {
       throw new Error(`Ollama HTTP ${response.status}: ${body}`);
     }
 
-    const data = (await response.json()) as OllamaChatResponse;
+    // Accumulate streamed NDJSON chunks into final response
+    const result = await this.consumeStream(response);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-    const tokens = data.eval_count ? ` (${data.eval_count} tokens)` : "";
-    console.log(`    [ollama] response: ${data.message.content.length} chars in ${elapsed}s${tokens}`);
+    const tokens = result.evalCount ? ` (${result.evalCount} tokens)` : "";
+    console.log(`    [ollama] response: ${result.content.length} chars in ${elapsed}s${tokens}`);
 
-    return parseSummaryResponse(data.message.content);
+    return parseSummaryResponse(result.content);
+  }
+
+  /**
+   * Consume Ollama's streaming NDJSON response.
+   * Each line is a JSON object with { message: { content: "..." }, done: bool }.
+   * The final chunk (done=true) contains eval_count and other stats.
+   */
+  private async consumeStream(
+    response: Response
+  ): Promise<{ content: string; evalCount?: number }> {
+    let content = "";
+    let evalCount: number | undefined;
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body from Ollama");
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines (NDJSON)
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? ""; // keep incomplete last line in buffer
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const chunk = JSON.parse(line);
+          if (chunk.message?.content) {
+            content += chunk.message.content;
+          }
+          if (chunk.done && chunk.eval_count) {
+            evalCount = chunk.eval_count;
+          }
+        } catch {
+          // Skip malformed lines
+        }
+      }
+    }
+
+    // Process any remaining data in buffer
+    if (buffer.trim()) {
+      try {
+        const chunk = JSON.parse(buffer);
+        if (chunk.message?.content) {
+          content += chunk.message.content;
+        }
+        if (chunk.done && chunk.eval_count) {
+          evalCount = chunk.eval_count;
+        }
+      } catch {
+        // Skip
+      }
+    }
+
+    return { content, evalCount };
   }
 }
