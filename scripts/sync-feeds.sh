@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync feeds from FEED.md into the database.
-# Adds any URLs not already present, skips duplicates.
+# Adds URLs not already present, removes URLs no longer in the file.
 
 set -euo pipefail
 
@@ -13,14 +13,19 @@ if [ ! -f "$FEED_FILE" ]; then
   exit 1
 fi
 
+# Collect desired URLs from file (skip blanks and comments)
+desired=$(while IFS= read -r line; do
+  url="$(echo "$line" | xargs)"
+  [[ -z "$url" || "$url" == \#* ]] && continue
+  echo "$url"
+done < "$FEED_FILE" | sort -u)
+
+# Add missing feeds
 added=0
 skipped=0
 
 while IFS= read -r url; do
-  # Skip empty lines and comments
-  url="$(echo "$url" | xargs)"
-  [[ -z "$url" || "$url" == \#* ]] && continue
-
+  [[ -z "$url" ]] && continue
   output=$(cd "$PROJECT_DIR" && npx tsx src/index.ts add "$url" 2>&1) || true
 
   if echo "$output" | grep -q "already exists"; then
@@ -31,7 +36,20 @@ while IFS= read -r url; do
   else
     echo "  ⚠ $url: $output"
   fi
-done < "$FEED_FILE"
+done <<< "$desired"
+
+# Remove feeds not in file
+removed=0
+current=$(cd "$PROJECT_DIR" && npx tsx src/index.ts list 2>&1 | grep "^  • " | sed 's/^  • //' | sed 's/ (.*//' | sort -u)
+
+while IFS= read -r url; do
+  [[ -z "$url" ]] && continue
+  if ! echo "$desired" | grep -qxF "$url"; then
+    output=$(cd "$PROJECT_DIR" && npx tsx src/index.ts remove "$url" 2>&1) || true
+    echo "  - $url"
+    removed=$((removed + 1))
+  fi
+done <<< "$current"
 
 echo ""
-echo "Done: $added added, $skipped already present"
+echo "Done: $added added, $removed removed, $skipped unchanged"
