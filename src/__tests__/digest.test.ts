@@ -20,25 +20,38 @@ function makeArticle(overrides: Partial<ArticleWithTags> = {}): ArticleWithTags 
 }
 
 describe("generateDigest", () => {
-  it("renders empty state when no articles", () => {
+  // ── Frontmatter ────────────────────────────────────
+
+  it("includes Astro-compatible frontmatter", () => {
+    const md = generateDigest("2026-03-25", [makeArticle()]);
+    expect(md).toMatch(/^---\n/);
+    expect(md).toContain('title: "Daily Feed — 2026-03-25"');
+    expect(md).toContain('date: "2026-03-25"');
+    expect(md).toContain('series: "Daily Feed"');
+  });
+
+  it("includes article count in description", () => {
+    const md = generateDigest("2026-03-25", [makeArticle()]);
+    expect(md).toContain('description: "1 article from the feeds I follow."');
+  });
+
+  it("pluralizes description for multiple articles", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ id: 1, guid: "a" }),
+      makeArticle({ id: 2, guid: "b" }),
+    ]);
+    expect(md).toContain('description: "2 articles from the feeds I follow."');
+  });
+
+  // ── Empty state ────────────────────────────────────
+
+  it("renders empty state with frontmatter", () => {
     const md = generateDigest("2026-03-25", []);
-    expect(md).toContain("# Feed Digest — 2026-03-25");
+    expect(md).toContain('title: "Daily Feed — 2026-03-25"');
     expect(md).toContain("No new articles today.");
   });
 
-  it("renders article count for single article", () => {
-    const md = generateDigest("2026-03-25", [makeArticle()]);
-    expect(md).toContain("*1 new article*");
-    expect(md).not.toContain("articles*"); // no plural
-  });
-
-  it("renders article count plural for multiple articles", () => {
-    const md = generateDigest("2026-03-25", [
-      makeArticle({ id: 1, guid: "a" }),
-      makeArticle({ id: 2, guid: "b", title: "Second" }),
-    ]);
-    expect(md).toContain("*2 new articles*");
-  });
+  // ── Article rendering ──────────────────────────────
 
   it("renders title as a link", () => {
     const md = generateDigest("2026-03-25", [makeArticle()]);
@@ -83,6 +96,8 @@ describe("generateDigest", () => {
     ]);
     expect(md).toContain("No summary available.");
   });
+
+  // ── Novelty ────────────────────────────────────────
 
   it("renders novelty stars and percentage", () => {
     const md = generateDigest("2026-03-25", [

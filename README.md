@@ -70,6 +70,18 @@ Example output:
 This article introduces a novel approach to...
 ```
 
+### Publish to a blog
+
+Point `RSS_DIGESTS_DIR` to your blog's content directory to generate blog-ready
+posts directly. Digests include Astro-compatible frontmatter with `title`,
+`date`, `description`, and `series: "Daily Feed"`.
+
+```bash
+export RSS_DIGESTS_DIR=~/Dev/my-blog/src/content/blog
+npm run digest
+# → ~/Dev/my-blog/src/content/blog/daily-feed-2026-03-25.md
+```
+
 ### CRON (daily at 7am)
 
 ```bash

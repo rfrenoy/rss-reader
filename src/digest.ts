@@ -7,21 +7,25 @@ export function generateDigest(
   date: string,
   articles: ArticleWithTags[]
 ): string {
+  const lines: string[] = [];
+
+  // Astro-compatible frontmatter
+  lines.push("---");
+  lines.push(`title: "Daily Feed — ${date}"`);
+  lines.push(`date: "${date}"`);
+  lines.push(
+    `description: "${articles.length} article${articles.length !== 1 ? "s" : ""} from the feeds I follow."`
+  );
+  lines.push(`series: "Daily Feed"`);
+  lines.push("---");
+  lines.push("");
+
   if (articles.length === 0) {
-    return `# Feed Digest — ${date}\n\nNo new articles today.\n`;
+    lines.push("No new articles today.");
+    return lines.join("\n") + "\n";
   }
 
-  const lines: string[] = [
-    `# Feed Digest — ${date}`,
-    "",
-    `*${articles.length} new article${articles.length !== 1 ? "s" : ""}*`,
-    "",
-    "---",
-    "",
-  ];
-
   for (const article of articles) {
-    // Title with novelty stars
     const stars =
       article.novelty_score != null
         ? ` ${noveltyToStars(article.novelty_score)}`
@@ -62,7 +66,7 @@ export function writeDigest(
   content: string
 ): string {
   fs.mkdirSync(digestsDir, { recursive: true });
-  const filepath = path.join(digestsDir, `${date}.md`);
+  const filepath = path.join(digestsDir, `daily-feed-${date}.md`);
   fs.writeFileSync(filepath, content, "utf-8");
   return filepath;
 }
