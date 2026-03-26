@@ -13,16 +13,16 @@ cd "$PROJECT_DIR"
 echo "=== $(date) ==="
 
 # 1. Sync feeds from FEED.md
-# echo "→ Syncing feeds..."
-# bash scripts/sync-feeds.sh
-# 
-# # 2. Generate digest
-# echo "→ Generating digest..."
-# if [ -n "$BLOG_CONTENT_DIR" ]; then
-#   RSS_DIGESTS_DIR="$BLOG_CONTENT_DIR" npm run digest --silent
-# else
-#   npm run digest --silent
-# fi
+echo "→ Syncing feeds..."
+bash scripts/sync-feeds.sh
+
+# 2. Generate digest
+echo "→ Generating digest..."
+if [ -n "$BLOG_CONTENT_DIR" ]; then
+  RSS_DIGESTS_DIR="$BLOG_CONTENT_DIR" npm run digest --silent
+else
+  npm run digest --silent
+fi
 
 # 3. Commit and push blog (if BLOG_DIR is set and there are changes)
 if [ -n "${BLOG_DIR:-}" ]; then

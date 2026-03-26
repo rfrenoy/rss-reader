@@ -99,19 +99,18 @@ describe("generateDigest", () => {
 
   // ── Novelty ────────────────────────────────────────
 
-  it("renders novelty stars and percentage", () => {
+  it("renders novelty percentage", () => {
     const md = generateDigest("2026-03-25", [
       makeArticle({ novelty_score: 0.75 }),
     ]);
-    expect(md).toContain("★★★★☆");
     expect(md).toContain("**Novelty**: 75%");
+    expect(md).not.toContain("★");
   });
 
   it("omits novelty when score is null", () => {
     const md = generateDigest("2026-03-25", [
       makeArticle({ novelty_score: null }),
     ]);
-    expect(md).not.toContain("★");
     expect(md).not.toContain("Novelty");
   });
 });

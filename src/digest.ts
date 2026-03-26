@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import type { ArticleWithTags } from "./db";
-import { noveltyToStars } from "./embeddings";
 
 export function generateDigest(
   date: string,
@@ -26,11 +25,7 @@ export function generateDigest(
   }
 
   for (const article of articles) {
-    const stars =
-      article.novelty_score != null
-        ? ` ${noveltyToStars(article.novelty_score)}`
-        : "";
-    lines.push(`## [${article.title}](${article.url})${stars}`);
+    lines.push(`## [${article.title}](${article.url})`);
     lines.push("");
 
     const meta: string[] = [];
