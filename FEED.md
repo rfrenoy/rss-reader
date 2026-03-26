@@ -1,0 +1,16 @@
+https://mariozechner.at/rss.xml
+https://mgratzer.com/rss.xml
+https://ghuntley.com/rss/
+https://thegradient.pub/rss/
+https://eugeneyan.com/rss/
+https://lpalmieri.com/rss.xml
+https://sirupsen.com/atom.xml
+https://www.evilsocket.net/atom.xml
+https://charitydotwtf.substack.com/feed
+https://vutr.substack.com/feed
+https://www.danliden.com/rss.xml
+https://endler.dev/rss.xml
+https://dansinker.com/feed.xml
+https://etsd.tech/rss.xml
+https://calv.info/atom.xml
+

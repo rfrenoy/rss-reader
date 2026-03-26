@@ -6,6 +6,7 @@
   "scripts": {
     "rss": "tsx src/index.ts",
     "digest": "tsx src/index.ts digest",
+    "sync-feeds": "bash scripts/sync-feeds.sh",
     "test": "vitest run",
     "test:watch": "vitest"
   },
