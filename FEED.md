@@ -13,4 +13,7 @@ https://endler.dev/rss.xml
 https://dansinker.com/feed.xml
 https://etsd.tech/rss.xml
 https://calv.info/atom.xml
-
+https://web.dev/static/blog/feed.xml
+https://blog.mozilla.org/feed/
+https://haskellforall.com/rss.xml
+https://steipete.me/rss.xml
