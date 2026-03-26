@@ -10,6 +10,7 @@ function makeArticle(overrides: Partial<ArticleWithTags> = {}): ArticleWithTags 
     url: "https://example.com/article",
     title: "Test Article",
     summary: "This is a test summary.",
+    novelty_score: 0.75,
     published_at: "2026-03-25T10:00:00Z",
     fetched_at: "2026-03-25T12:00:00Z",
     tags: ["ai", "testing"],
@@ -81,5 +82,21 @@ describe("generateDigest", () => {
       makeArticle({ summary: null }),
     ]);
     expect(md).toContain("No summary available.");
+  });
+
+  it("renders novelty stars and percentage", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ novelty_score: 0.75 }),
+    ]);
+    expect(md).toContain("★★★★☆");
+    expect(md).toContain("**Novelty**: 75%");
+  });
+
+  it("omits novelty when score is null", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ novelty_score: null }),
+    ]);
+    expect(md).not.toContain("★");
+    expect(md).not.toContain("Novelty");
   });
 });

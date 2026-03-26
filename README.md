@@ -13,6 +13,7 @@ npm install
 ```bash
 # Install Ollama: https://ollama.com
 ollama pull qwen2.5:7b
+ollama pull nomic-embed-text
 ```
 
 No API key needed. The reader defaults to Ollama when no `ANTHROPIC_API_KEY` is set.
@@ -40,8 +41,10 @@ npm run digest
 ```
 
 This fetches all feeds, identifies new articles (GUID-based dedup), extracts full
-article content, generates a summary and tags via LLM, and writes a dated
-markdown file to `~/.rss-reader/digests/YYYY-MM-DD.md`.
+article content, embeds it for novelty scoring and deduplication, generates a
+summary and tags via LLM, and writes a dated markdown file to
+`~/.rss-reader/digests/YYYY-MM-DD.md`. Articles are sorted by novelty — most
+interesting first.
 
 ### CRON (daily at 7am)
 
@@ -60,6 +63,8 @@ All via environment variables (or `.env`):
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key (triggers auto-detect) |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Anthropic model |
+| `EMBEDDING_MODEL` | `nomic-embed-text` | Ollama model for embeddings |
+| `DEDUPE_THRESHOLD` | `0.85` | Similarity above this → duplicate, skip |
 | `MAX_ARTICLE_AGE_DAYS` | `7` | Skip articles older than N days |
 | `MAX_ARTICLES_PER_FEED` | `20` | Max articles to process per feed |
 | `RSS_DATA_DIR` | `~/.rss-reader` | Database and data directory |
@@ -75,6 +80,7 @@ src/
 ├── fetcher.ts        RSS parsing + full article extraction
 ├── summarizer.ts     Orchestrates LLM summarization
 ├── digest.ts         Markdown digest generation
+├── embeddings.ts     Ollama embeddings, cosine similarity, novelty scoring
 └── llm/
     ├── types.ts      LLMProvider interface (abstraction layer)
     ├── shared.ts     Prompt template + response parsing

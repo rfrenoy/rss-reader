@@ -21,6 +21,10 @@ export interface Config {
   // Fetch limits
   maxArticleAgeDays: number;
   maxArticlesPerFeed: number;
+
+  // Embeddings
+  embeddingModel: string;
+  dedupeThreshold: number; // similarity above this → duplicate, skip
 }
 
 function resolveProvider(): LLMProviderType {
@@ -51,5 +55,8 @@ export function loadConfig(): Config {
 
     maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "7", 10),
     maxArticlesPerFeed: parseInt(process.env.MAX_ARTICLES_PER_FEED || "20", 10),
+
+    embeddingModel: process.env.EMBEDDING_MODEL || "nomic-embed-text",
+    dedupeThreshold: parseFloat(process.env.DEDUPE_THRESHOLD || "0.85"),
   };
 }

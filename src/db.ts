@@ -18,6 +18,7 @@ export interface Article {
   url: string;
   title: string;
   summary: string | null;
+  novelty_score: number | null;
   published_at: string | null;
   fetched_at: string;
 }
@@ -68,7 +69,19 @@ export function initDatabase(dbPath: string): Database.Database {
       filepath TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS embeddings (
+      article_id INTEGER PRIMARY KEY REFERENCES articles(id) ON DELETE CASCADE,
+      vector BLOB NOT NULL
+    );
   `);
+
+  // Migrate: add novelty_score column if missing (for existing DBs)
+  try {
+    db.exec(`ALTER TABLE articles ADD COLUMN novelty_score REAL`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   return db;
 }
@@ -170,7 +183,7 @@ export function getArticlesSince(
        FROM articles a
        JOIN feeds f ON a.feed_id = f.id
        WHERE a.fetched_at >= ?
-       ORDER BY a.published_at DESC, a.fetched_at DESC`
+       ORDER BY a.novelty_score DESC, a.published_at DESC, a.fetched_at DESC`
     )
     .all(since) as (Article & { feed_title: string | null })[];
 
@@ -180,6 +193,37 @@ export function getArticlesSince(
       .all(article.id) as { tag: string }[];
     return { ...article, tags: tags.map((t) => t.tag) };
   });
+}
+
+// ── Embedding operations ───────────────────────────────
+
+export function insertEmbedding(
+  db: Database.Database,
+  articleId: number,
+  vector: Buffer
+): void {
+  db.prepare(
+    "INSERT OR REPLACE INTO embeddings (article_id, vector) VALUES (?, ?)"
+  ).run(articleId, vector);
+}
+
+export function getAllEmbeddings(
+  db: Database.Database
+): { articleId: number; vector: Buffer }[] {
+  return db
+    .prepare("SELECT article_id AS articleId, vector FROM embeddings")
+    .all() as { articleId: number; vector: Buffer }[];
+}
+
+export function updateNoveltyScore(
+  db: Database.Database,
+  articleId: number,
+  score: number
+): void {
+  db.prepare("UPDATE articles SET novelty_score = ? WHERE id = ?").run(
+    score,
+    articleId
+  );
 }
 
 // ── Digest operations ──────────────────────────────────

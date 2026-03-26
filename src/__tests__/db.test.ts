@@ -9,9 +9,13 @@ import {
   articleExists,
   insertArticle,
   insertTags,
+  insertEmbedding,
+  getAllEmbeddings,
+  updateNoveltyScore,
   getArticlesSince,
   recordDigest,
 } from "../db";
+import { serializeVector, deserializeVector } from "../embeddings";
 
 let db: Database.Database;
 
@@ -33,6 +37,7 @@ beforeEach(() => {
       url TEXT NOT NULL,
       title TEXT NOT NULL,
       summary TEXT,
+      novelty_score REAL,
       published_at TEXT,
       fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(feed_id, guid)
@@ -47,6 +52,10 @@ beforeEach(() => {
       date TEXT NOT NULL UNIQUE,
       filepath TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE embeddings (
+      article_id INTEGER PRIMARY KEY REFERENCES articles(id) ON DELETE CASCADE,
+      vector BLOB NOT NULL
     );
   `);
 });
@@ -329,6 +338,94 @@ describe("getArticlesSince", () => {
     });
     const articles = getArticlesSince(db, "2000-01-01T00:00:00");
     expect(articles[0].tags).toEqual([]);
+  });
+});
+
+// ── Embedding operations ───────────────────────────────
+
+describe("insertEmbedding / getAllEmbeddings", () => {
+  it("stores and retrieves an embedding", () => {
+    const feed = addFeed(db, "https://example.com/feed.xml");
+    const id = insertArticle(db, {
+      feed_id: feed.id,
+      guid: "g1",
+      url: "https://example.com/1",
+      title: "T",
+      summary: "s",
+      published_at: null,
+    });
+    const vector = [0.1, 0.2, 0.3];
+    insertEmbedding(db, id, serializeVector(vector));
+
+    const all = getAllEmbeddings(db);
+    expect(all).toHaveLength(1);
+    expect(all[0].articleId).toBe(id);
+    const restored = deserializeVector(all[0].vector);
+    expect(restored[0]).toBeCloseTo(0.1);
+    expect(restored[1]).toBeCloseTo(0.2);
+    expect(restored[2]).toBeCloseTo(0.3);
+  });
+
+  it("cascades on feed delete", () => {
+    const feed = addFeed(db, "https://example.com/feed.xml");
+    const id = insertArticle(db, {
+      feed_id: feed.id,
+      guid: "g1",
+      url: "https://example.com/1",
+      title: "T",
+      summary: "s",
+      published_at: null,
+    });
+    insertEmbedding(db, id, serializeVector([1, 2, 3]));
+    removeFeed(db, "https://example.com/feed.xml");
+    expect(getAllEmbeddings(db)).toHaveLength(0);
+  });
+});
+
+describe("updateNoveltyScore", () => {
+  it("sets novelty_score on an article", () => {
+    const feed = addFeed(db, "https://example.com/feed.xml");
+    const id = insertArticle(db, {
+      feed_id: feed.id,
+      guid: "g1",
+      url: "https://example.com/1",
+      title: "T",
+      summary: "s",
+      published_at: null,
+    });
+    updateNoveltyScore(db, id, 0.73);
+    const row = db.prepare("SELECT novelty_score FROM articles WHERE id = ?").get(id) as any;
+    expect(row.novelty_score).toBeCloseTo(0.73);
+  });
+});
+
+describe("getArticlesSince sorts by novelty", () => {
+  it("returns most novel articles first", () => {
+    const feed = addFeed(db, "https://example.com/feed.xml");
+    const id1 = insertArticle(db, {
+      feed_id: feed.id,
+      guid: "low",
+      url: "https://example.com/1",
+      title: "Low Novelty",
+      summary: "s",
+      published_at: null,
+    });
+    updateNoveltyScore(db, id1, 0.2);
+
+    const id2 = insertArticle(db, {
+      feed_id: feed.id,
+      guid: "high",
+      url: "https://example.com/2",
+      title: "High Novelty",
+      summary: "s",
+      published_at: null,
+    });
+    updateNoveltyScore(db, id2, 0.9);
+
+    const articles = getArticlesSince(db, "2000-01-01 00:00:00");
+    expect(articles).toHaveLength(2);
+    expect(articles[0].title).toBe("High Novelty");
+    expect(articles[1].title).toBe("Low Novelty");
   });
 });
 

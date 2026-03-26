@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { ArticleWithTags } from "./db";
+import { noveltyToStars } from "./embeddings";
 
 export function generateDigest(
   date: string,
@@ -20,7 +21,12 @@ export function generateDigest(
   ];
 
   for (const article of articles) {
-    lines.push(`## [${article.title}](${article.url})`);
+    // Title with novelty stars
+    const stars =
+      article.novelty_score != null
+        ? ` ${noveltyToStars(article.novelty_score)}`
+        : "";
+    lines.push(`## [${article.title}](${article.url})${stars}`);
     lines.push("");
 
     const meta: string[] = [];
@@ -31,6 +37,10 @@ export function generateDigest(
       );
     if (article.published_at)
       meta.push(`**Published**: ${article.published_at.split("T")[0]}`);
+    if (article.novelty_score != null)
+      meta.push(
+        `**Novelty**: ${Math.round(article.novelty_score * 100)}%`
+      );
 
     if (meta.length > 0) {
       lines.push(meta.join(" | "));

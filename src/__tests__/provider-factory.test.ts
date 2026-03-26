@@ -16,6 +16,8 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     ollamaBaseUrl: "http://localhost:11434",
     maxArticleAgeDays: 7,
     maxArticlesPerFeed: 20,
+    embeddingModel: "nomic-embed-text",
+    dedupeThreshold: 0.85,
     ...overrides,
   };
 }
