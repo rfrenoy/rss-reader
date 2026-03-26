@@ -27,11 +27,11 @@ fi
 # 3. Commit and push blog (if BLOG_DIR is set and there are changes)
 if [ -n "${BLOG_DIR:-}" ]; then
   cd "$BLOG_DIR"
-  if git diff --quiet && git diff --cached --quiet; then
+  git add -A
+  if git diff --cached --quiet; then
     echo "→ No changes to publish"
   else
     TODAY=$(date +%Y-%m-%d)
-    git add -A
     git commit -m "Daily Feed — $TODAY"
     git push
     echo "→ Published to blog"
