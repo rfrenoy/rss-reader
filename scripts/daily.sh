@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-BLOG_CONTENT_DIR="${BLOG_DIR:+$BLOG_DIR/src/content/blog}"
+BLOG_CONTENT_DIR="${BLOG_DIR:+$BLOG_DIR/src/content/daily-feed}"
 
 cd "$PROJECT_DIR"
 
