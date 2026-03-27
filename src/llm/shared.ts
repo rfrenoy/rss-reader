@@ -1,6 +1,26 @@
 import type { ArticleSummary } from "./types";
 
-export const SUMMARIZE_PROMPT = `You are an expert content analyst. Analyze the following article and provide:
+export const MAX_CONTENT_CHARS = 40_000;
+
+/**
+ * Build the user message for summarization.
+ * Content comes first, instruction last — keeps the instruction fresh
+ * in the model's attention when generation starts ("lost in the middle" problem).
+ */
+export function buildSummarizeMessage(
+  title: string,
+  content: string,
+  maxChars: number = MAX_CONTENT_CHARS
+): string {
+  const truncated = content.slice(0, maxChars);
+  return `Article title: ${title}
+
+Article content:
+${truncated}
+
+---
+
+Based on the article above, provide:
 1. A concise summary (2-4 sentences) focusing on new ideas, unique points of view, or notable pieces of code. Be specific — mention names, numbers, and concrete details rather than vague generalities.
 2. 1-5 relevant topic tags (lowercase, single words or hyphenated).
 
@@ -9,19 +29,6 @@ Respond in JSON format exactly like this:
   "summary": "Your summary here",
   "tags": ["tag1", "tag2"]
 }`;
-
-export const MAX_CONTENT_CHARS = 12_000; // ~3k tokens, keeps small models responsive
-
-/**
- * Build the user message for summarization.
- */
-export function buildSummarizeMessage(
-  title: string,
-  content: string,
-  maxChars: number = MAX_CONTENT_CHARS
-): string {
-  const truncated = content.slice(0, maxChars);
-  return `${SUMMARIZE_PROMPT}\n\nArticle title: ${title}\n\nArticle content:\n${truncated}`;
 }
 
 /**
