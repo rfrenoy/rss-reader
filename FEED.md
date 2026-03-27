@@ -24,3 +24,11 @@ https://www.brendangregg.com/blog/rss.xml
 https://bcantrill.dtrace.org/index.xml
 https://carlosbecker.com/index.xml
 https://craigmod.com/roden/index.xml
+https://lalinsky.com/feed.xml
+https://huggingface.co/blog/feed.xml
+https://code.dblock.org/feed.xml
+https://drewdevault.com/blog/index.xml
+https://evanhahn.com/blog/index.xml
+https://words.filippo.io/rss/
+https://feeds.feedburner.com/martinkl
+https://martinfowler.com/feed.atom

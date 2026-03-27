@@ -10,7 +10,7 @@ Respond in JSON format exactly like this:
   "tags": ["tag1", "tag2"]
 }`;
 
-export const MAX_CONTENT_CHARS = 40_000;
+export const MAX_CONTENT_CHARS = 12_000; // ~3k tokens, keeps small models responsive
 
 /**
  * Build the user message for summarization.
@@ -33,11 +33,18 @@ export function parseSummaryResponse(text: string): ArticleSummary {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in LLM response");
     const parsed = JSON.parse(jsonMatch[0]);
+    const summary = typeof parsed.summary === "string" && parsed.summary.trim()
+      ? parsed.summary.trim()
+      : null;
+    if (!summary) {
+      console.warn(`    ⚠ LLM returned empty summary. Raw response: ${text.slice(0, 200)}`);
+    }
     return {
-      summary: parsed.summary || "No summary available.",
+      summary: summary || "No summary available.",
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
     };
   } catch {
+    console.warn(`    ⚠ Failed to parse LLM JSON. Raw response: ${text.slice(0, 200)}`);
     return { summary: text.slice(0, 500), tags: [] };
   }
 }
