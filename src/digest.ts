@@ -2,6 +2,63 @@ import fs from "fs";
 import path from "path";
 import type { ArticleWithTags } from "./db";
 
+/**
+ * Format a list of items as "A, B, and C" or "A, B, and N others".
+ */
+function formatList(items: string[], max: number): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length <= max) {
+    return items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+  }
+  const shown = items.slice(0, max);
+  const remaining = items.length - max;
+  return shown.join(", ") + ` and ${remaining} other${remaining !== 1 ? "s" : ""}`;
+}
+
+/**
+ * Build a description like:
+ * "5 articles from Blog A, Blog B, and 2 others, covering rust, ai, and web."
+ */
+export function buildDescription(articles: ArticleWithTags[]): string {
+  const count = articles.length;
+  if (count === 0) return "No new articles today.";
+
+  const articleWord = count === 1 ? "article" : "articles";
+
+  // Unique sources, preserving order of appearance
+  const sources = [
+    ...new Map(
+      articles
+        .filter((a) => a.feed_title)
+        .map((a) => [a.feed_title!, a.feed_title!])
+    ).values(),
+  ];
+
+  // Top tags by frequency
+  const tagCounts = new Map<string, number>();
+  for (const a of articles) {
+    for (const t of a.tags) {
+      tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+    }
+  }
+  const topTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag]) => tag);
+
+  let desc = `${count} ${articleWord}`;
+
+  if (sources.length > 0) {
+    desc += ` from ${formatList(sources, 3)}`;
+  }
+
+  if (topTags.length > 0) {
+    desc += `, covering ${formatList(topTags.slice(0, 4), 4)}`;
+  }
+
+  return desc + ".";
+}
+
 export function generateDigest(
   date: string,
   articles: ArticleWithTags[]
@@ -9,12 +66,11 @@ export function generateDigest(
   const lines: string[] = [];
 
   // Astro-compatible frontmatter
+  const description = buildDescription(articles);
   lines.push("---");
   lines.push(`title: "Daily Feed — ${date}"`);
   lines.push(`date: "${date}"`);
-  lines.push(
-    `description: "${articles.length} article${articles.length !== 1 ? "s" : ""} from the feeds I follow."`
-  );
+  lines.push(`description: "${description}"`);
   lines.push(`series: "Daily Feed"`);
   lines.push("---");
   lines.push("");
