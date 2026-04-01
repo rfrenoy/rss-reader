@@ -32,3 +32,6 @@ https://evanhahn.com/blog/index.xml
 https://words.filippo.io/rss/
 https://feeds.feedburner.com/martinkl
 https://martinfowler.com/feed.atom
+https://research.google/blog/rss/
+https://skuth.us/rss.xml
+https://www.newcartographies.com/feed
