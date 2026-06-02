@@ -3,6 +3,52 @@ import path from "path";
 import type { ArticleWithTags } from "./db";
 
 /**
+ * Escape characters that have special meaning in HTML, so user-provided
+ * data (feed titles, article titles, LLM summaries) is rendered as text
+ * rather than being eaten by the markdown/HTML parser. `&` is replaced
+ * first to avoid double-escaping the entities we add below.
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Escape a string for inclusion in a YAML double-quoted scalar
+ * (the frontmatter `description`). Collapses whitespace to a single
+ * line since frontmatter fields are single-line.
+ */
+function escapeYamlDoubleQuoted(s: string): string {
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Feed titles used in the frontmatter description: collapse whitespace
+ * so a stray newline can't break the YAML scalar. Don't HTML-escape —
+ * the description is plain text and we want it to read naturally
+ * (e.g. `<antirez>` shown as `<antirez>`, not `&lt;antirez&gt;`).
+ */
+function normalizeFeedTitleForDescription(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Feed titles used inline in the markdown body (the `**Source**: …` meta
+ * line): collapse whitespace and HTML-escape the result so a stray tag
+ * like `<antirez>` from an RSS channel title doesn't disappear in render.
+ */
+function sanitizeFeedTitle(s: string): string {
+  return escapeHtml(s.replace(/\s+/g, " ").trim());
+}
+
+/**
  * Format a list of items as "A, B, and C" or "A, B, and N others".
  */
 function formatList(items: string[], max: number): string {
@@ -26,12 +72,16 @@ export function buildDescription(articles: ArticleWithTags[]): string {
 
   const articleWord = count === 1 ? "article" : "articles";
 
-  // Unique sources, preserving order of appearance
+  // Unique sources, preserving order of appearance. Normalize so a
+  // feed title with a stray newline can't break the YAML scalar.
   const sources = [
     ...new Map(
       articles
         .filter((a) => a.feed_title)
-        .map((a) => [a.feed_title!, a.feed_title!])
+        .map((a) => [
+          a.feed_title!,
+          normalizeFeedTitleForDescription(a.feed_title!),
+        ])
     ).values(),
   ];
 
@@ -66,7 +116,7 @@ export function generateDigest(
   const lines: string[] = [];
 
   // Astro-compatible frontmatter
-  const description = buildDescription(articles);
+  const description = escapeYamlDoubleQuoted(buildDescription(articles));
   lines.push("---");
   lines.push(`title: "Daily Feed — ${date}"`);
   lines.push(`date: "${date}"`);
@@ -81,11 +131,12 @@ export function generateDigest(
   }
 
   for (const article of articles) {
-    lines.push(`## [${article.title}](${article.url})`);
+    lines.push(`## [${escapeHtml(article.title)}](${article.url})`);
     lines.push("");
 
     const meta: string[] = [];
-    if (article.feed_title) meta.push(`**Source**: ${article.feed_title}`);
+    if (article.feed_title)
+      meta.push(`**Source**: ${sanitizeFeedTitle(article.feed_title)}`);
     if (article.tags.length > 0)
       meta.push(
         `**Tags**: ${article.tags.map((t) => `\`${t}\``).join(", ")}`
@@ -102,7 +153,7 @@ export function generateDigest(
       lines.push("");
     }
 
-    lines.push(article.summary || "No summary available.");
+    lines.push(article.summary ? escapeHtml(article.summary) : "No summary available.");
     lines.push("");
     lines.push("---");
     lines.push("");

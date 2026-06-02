@@ -106,6 +106,67 @@ describe("generateDigest", () => {
     ]);
     expect(md).not.toContain("Novelty");
   });
+
+  // ── Escaping ─────────────────────────────────────────
+
+  it("escapes HTML tags in the article title", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ title: "On the <dl> element" }),
+    ]);
+    expect(md).toContain("## [On the &lt;dl&gt; element](https://example.com/article)");
+    expect(md).not.toContain("<dl>");
+  });
+
+  it("escapes HTML tags in the summary", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({
+        summary: "It explains <dl>, <dt>, and <dd> with a <div> wrapper.",
+      }),
+    ]);
+    expect(md).toContain(
+      "It explains &lt;dl&gt;, &lt;dt&gt;, and &lt;dd&gt; with a &lt;div&gt; wrapper."
+    );
+    expect(md).not.toContain("<dl>");
+    expect(md).not.toContain("<dt>");
+    expect(md).not.toContain("<dd>");
+    expect(md).not.toContain("<div>");
+  });
+
+  it("escapes HTML in feed_title (the <antirez> case)", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ feed_title: "<antirez>" }),
+    ]);
+    expect(md).toContain("**Source**: &lt;antirez&gt;");
+    expect(md).not.toMatch(/\*\*Source\*\*:.*<antirez>/);
+  });
+
+  it("collapses whitespace in feed_title so a stray newline doesn't split the meta line", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({ feed_title: "<antirez>\n" }),
+    ]);
+    // The meta line should be a single physical line; the embedded
+    // newline in feed_title must not have leaked out.
+    const sourceLine = md
+      .split("\n")
+      .find((l) => l.startsWith("**Source**"));
+    expect(sourceLine).toBeDefined();
+    expect(sourceLine).toMatch(/^\*\*Source\*\*: &lt;antirez&gt;(\s\|\s|$)/);
+    expect(sourceLine).not.toContain("\n");
+  });
+
+  it("escapes quotes in the frontmatter description for YAML", () => {
+    const md = generateDigest("2026-03-25", [
+      makeArticle({
+        feed_title: 'Blog "With" Quotes',
+        tags: [],
+      }),
+    ]);
+    // The description value must keep `"` (not the HTML entity form),
+    // since descriptions are surfaced to readers as plain text.
+    expect(md).toContain(
+      'description: "1 article from Blog \\"With\\" Quotes."'
+    );
+  });
 });
 
 // ── buildDescription ─────────────────────────────────
@@ -173,5 +234,20 @@ describe("buildDescription", () => {
       makeArticle({ feed_title: "Blog", tags: [] }),
     ]);
     expect(desc).toBe("1 article from Blog.");
+  });
+
+  it("preserves HTML-like characters in feed titles (description is plain text)", () => {
+    const desc = buildDescription([
+      makeArticle({ feed_title: "<antirez>", tags: [] }),
+    ]);
+    // Description stays readable: angle brackets are kept as-is.
+    expect(desc).toBe("1 article from <antirez>.");
+  });
+
+  it("collapses whitespace in feed titles so a stray newline doesn't break the YAML scalar", () => {
+    const desc = buildDescription([
+      makeArticle({ feed_title: "<antirez>\n", tags: [] }),
+    ]);
+    expect(desc).toBe("1 article from <antirez>.");
   });
 });
