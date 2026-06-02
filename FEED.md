@@ -35,3 +35,10 @@ https://martinfowler.com/feed.atom
 https://research.google/blog/rss/
 https://skuth.us/rss.xml
 https://www.newcartographies.com/feed
+https://simonwillison.net/atom/everything/
+https://letters.blakeboles.com/feed
+https://blog.colinbreck.com/rss/
+https://justine.lol/rss.xml
+https://christophermeiklejohn.com/feed.xml
+https://matduggan.com/rss/
+https://dubroy.com/blog/rss.xml
